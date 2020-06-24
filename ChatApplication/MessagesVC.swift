@@ -18,9 +18,8 @@ class MessagesVC: UIViewController {
     var channelNameLbl = UILabel()
     var typingIndicator = UILabel()
     
-    
+    var pubnubHelper = PubNubHelper()
     var listener: SubscriptionListener?
-    var client: PubNub!
     var channelName: String?
     var messages: [String] = []
     
@@ -31,6 +30,7 @@ class MessagesVC: UIViewController {
         messageTableView.dataSource = self
         messageTxt.delegate = self
         
+        pubnubHelper.pubnubConfig()
         navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
         setNavBar()
         
@@ -91,14 +91,14 @@ class MessagesVC: UIViewController {
     }
     
     @objc func menuBtnTapped(){
-        print("Menu  button pressed")
+        print("Menu button pressed")
     }
     
     func publishMessage() {
         if(messageTxt.text != "" || messageTxt.text != nil){
             let messageString: String = messageTxt.text!
-            print("message publiing")
-            client.publish(channel: channelName!, message: messageString) { (status) in
+            print("message publising")
+            pubnubHelper.client.publish(channel: channelName!, message: messageString) { (status) in
                 switch status {
                 case let .success(response):
                     print("Handle successful Publish response: \(response)")
@@ -117,11 +117,12 @@ class MessagesVC: UIViewController {
 
 extension MessagesVC: UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 10
+        return messages.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MessagesCell", for: indexPath) as! MessagesTableViewCell
+        cell.textLabel?.text = messages[indexPath.row]
         return cell
     }
 }
@@ -133,7 +134,7 @@ extension MessagesVC:UITextFieldDelegate{
     }
     
     func textFieldDidBeginEditing(_ textField: UITextField) {
-        client.signal(channel: channelName!,message: "is typing...") { result in
+        pubnubHelper.client.signal(channel: channelName!,message: "is typing...") { result in
             switch result {
             case let .success(response):
                 print("Successful Response: \(response)")

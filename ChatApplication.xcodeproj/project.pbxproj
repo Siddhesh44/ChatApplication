@@ -20,6 +20,7 @@
 		F6A4E7B7249A0E8D0032798F /* ChatsTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A4E7B6249A0E8D0032798F /* ChatsTableViewCell.swift */; };
 		F6A4E7B9249A0E9D0032798F /* MessagesTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A4E7B8249A0E9D0032798F /* MessagesTableViewCell.swift */; };
 		F6A4E7BB249A537F0032798F /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A4E7BA249A537F0032798F /* User.swift */; };
+		F6A4E7BD24A1C5030032798F /* PubNubHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A4E7BC24A1C5020032798F /* PubNubHelper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 		F6A4E7B6249A0E8D0032798F /* ChatsTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatsTableViewCell.swift; sourceTree = "<group>"; };
 		F6A4E7B8249A0E9D0032798F /* MessagesTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesTableViewCell.swift; sourceTree = "<group>"; };
 		F6A4E7BA249A537F0032798F /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		F6A4E7BC24A1C5020032798F /* PubNubHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PubNubHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +97,7 @@
 				F6A4E79B2499E5A50032798F /* AppDelegate.swift */,
 				F6A4E79D2499E5A50032798F /* SceneDelegate.swift */,
 				F6A4E79F2499E5A50032798F /* ViewController.swift */,
+				F6A4E7BC24A1C5020032798F /* PubNubHelper.swift */,
 				F6A4E7A12499E5A50032798F /* Main.storyboard */,
 				F6A4E7B2249A0E580032798F /* ChatsVC.swift */,
 				F6A4E7BA249A537F0032798F /* User.swift */,
@@ -225,6 +228,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F6A4E7B5249A0E670032798F /* MessagesVC.swift in Sources */,
+				F6A4E7BD24A1C5030032798F /* PubNubHelper.swift in Sources */,
 				F6A4E7B9249A0E9D0032798F /* MessagesTableViewCell.swift in Sources */,
 				F6A4E7B3249A0E580032798F /* ChatsVC.swift in Sources */,
 				F6A4E7A62499E5A50032798F /* ChatApplication.xcdatamodeld in Sources */,

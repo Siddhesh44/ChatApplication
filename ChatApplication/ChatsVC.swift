@@ -12,8 +12,10 @@ import PubNub
 class ChatsVC: UIViewController {
     
     @IBOutlet weak var chatTableView: UITableView!
+    @IBOutlet var addChannelView: UIView!
+    @IBOutlet weak var addNewChannelTxt: UITextField!
     
-    var client: PubNub!
+    var pubnubHelper = PubNubHelper()
     var user: String?
     let listener = SubscriptionListener(queue: .main)
     var channels: [String] = []
@@ -22,55 +24,44 @@ class ChatsVC: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        navigationController?.isNavigationBarHidden = false
-        navigationItem.title = "Chats"
-        
+        addNewChannelTxt.delegate = self
         chatTableView.delegate = self
         chatTableView.dataSource = self
         
-        client.add(listener)
-        channels = ["Group1","Group2","Friend1"]
-        client.subscribe(to: channels,withPresence: true)
+        pubnubHelper.pubnubDelegate = self
         
-        loadLastMessages()
+        navigationController?.isNavigationBarHidden = false
+        navigationItem.title = "Chats"
+        
+        pubnubHelper.pubnubConfig()
+        
+        pubnubHelper.client.add(listener)
+        
+        pubnubHelper.client.subscribe(to: channels,withPresence: true)
+        
+        pubnubHelper.loadLastMessages(forChannels: channels)
         
         setUpNavBar()
+        
+        addChannelView.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
+    }
+    
+    @IBAction func cancelBtn(_ sender: UIButton) {
+        addChannelView.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
+    }
+    
+    @IBAction func addNewChannelBtnTapped(_ sender: UIButton) {
+        
     }
     
     func setUpNavBar(){
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "icons8-add-64"), style: .plain, target: self, action: #selector(ChatsVC.addChannelBtnTapped))
     }
-
+    
     @objc func addChannelBtnTapped(){
         print("add channel button pressed")
-    }
-    
-    func loadLastMessages()
-    {
-        client.fetchMessageHistory(for: channels, max: 25, start: nil, end: nil) { (result) in
-            switch result{
-            case let .success(response):
-                print("######################")
-                print("Successful History Fetch Response: \(response)")
-                print("######################")
-                
-                if let response = response["My"]?.messages{
-                    for m in response{
-                        if let oldMessages = m.message.stringOptional {
-                            print("messages",oldMessages)
-                            self.messages.append(oldMessages)
-                        }
-                    }
-                }
-                
-                self.chatTableView.reloadData()
-                
-            case let .failure(error):
-                print("######################")
-                print("Failed History Fetch Response: \(error.localizedDescription)")
-                print("######################")
-            }
-        }
+        addChannelView.frame = CGRect(x: 120, y: 70, width: 300, height: 300)
+        view.addSubview(addChannelView)
     }
 }
 
@@ -89,10 +80,35 @@ extension ChatsVC: UITableViewDelegate,UITableViewDataSource{
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let nextVC = storyboard.instantiateViewController(withIdentifier: "MessagesVC") as! MessagesVC
         nextVC.listener = listener
-        nextVC.client = client
         nextVC.messages = messages
         nextVC.channelName = channels[indexPath.row]
         self.navigationController?.pushViewController(nextVC, animated: true)
     }
+}
+
+extension ChatsVC: UITextFieldDelegate{
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
+}
+
+extension ChatsVC: PubNubDelegates{
+    func didGetChannelList(result: String, channelList: [String]) {
+        print(result)
+        self.channels = channelList
+    }
+    
+    func loadingLastMessages(result: String, messages: String) {
+        print(result)
+        self.messages.append(messages)
+        self.chatTableView.reloadData()
+    }
+    
+    func didGetResults(result: String) {
+        print(result)
+    }
+    
+    
 }
 
