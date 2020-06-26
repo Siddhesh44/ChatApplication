@@ -76,6 +76,7 @@ class MessagesVC: UIViewController {
             
             print("Received Message:-",message)
             
+            
             let messageDate = message.timetoken.timetokenDate
             print("The message was sent at \(messageDate)")
             
