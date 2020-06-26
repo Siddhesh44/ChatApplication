@@ -18,6 +18,7 @@ class ViewController: UIViewController {
     
     var userName: String?
     var newUserName: String?
+    var fixedChannels: [String]?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,13 +40,22 @@ class ViewController: UIViewController {
     // MARK: Connect User
     @IBAction func btn(_ sender: UIButton) {
         userName = txt.text!
-        
+        if userName == "Sid"{
+            fixedChannels = ["s1s2","s1s3","G1"]
+        } else if userName == "Siddhesh"{
+            fixedChannels = ["s1s2","s2s3","G1"]
+        } else if userName == "Sidd"{
+            fixedChannels = ["s2s3","s1s3","G1"]
+        }
         pubnubHelper.fetchUsers(userName: userName!)
         txt.text = ""
         
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let nextVC = storyboard.instantiateViewController(withIdentifier: "ChatsVC") as! ChatsVC
         nextVC.user = userName
+        if let fixedChannels = fixedChannels{
+        nextVC.channels = fixedChannels
+        }
         self.navigationController?.pushViewController(nextVC, animated: true)
     }
     
@@ -73,7 +83,7 @@ extension ViewController:UITextFieldDelegate{
 
 extension ViewController: PubNubDelegates{
     func didGetChannelList(result: String, channelList: [String]) {}
-    func loadingLastMessages(result: String, messages: String) {}
+    func loadingLastMessages(result: String, messages: [String: [String]]) {}
     
     func didGetResults(result: String) {
         print(result)

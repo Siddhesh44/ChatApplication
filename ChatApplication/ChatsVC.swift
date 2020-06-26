@@ -19,7 +19,7 @@ class ChatsVC: UIViewController {
     var user: String?
     let listener = SubscriptionListener(queue: .main)
     var channels: [String] = []
-    var messages: [String] = []
+    var loadedMessages: [String: [String]] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -79,8 +79,13 @@ extension ChatsVC: UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let nextVC = storyboard.instantiateViewController(withIdentifier: "MessagesVC") as! MessagesVC
+        var channelName: String = ""
+        channelName = channels[indexPath.row]
         nextVC.listener = listener
-        nextVC.messages = messages
+        print("loadedMessages",loadedMessages)
+        print("Messages for specific channel",loadedMessages[channelName]!)
+        nextVC.messages = loadedMessages[channelName]!
+        
         nextVC.channelName = channels[indexPath.row]
         self.navigationController?.pushViewController(nextVC, animated: true)
     }
@@ -95,20 +100,18 @@ extension ChatsVC: UITextFieldDelegate{
 
 extension ChatsVC: PubNubDelegates{
     func didGetChannelList(result: String, channelList: [String]) {
-        print(result)
+        print("didGetChannelList",result)
         self.channels = channelList
     }
     
-    func loadingLastMessages(result: String, messages: String) {
-        print(result)
-        self.messages.append(messages)
-        self.chatTableView.reloadData()
+    func loadingLastMessages(result: String, messages: [String: [String]]) {
+        print("loadingLastMessages",result)
+        print("History:-",messages)
+        
+        self.loadedMessages = loadedMessages.merging(messages, uniquingKeysWith: { (first, _) in first })
     }
-    
     func didGetResults(result: String) {
         print(result)
     }
-    
-    
 }
 
