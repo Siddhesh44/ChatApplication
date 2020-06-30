@@ -106,6 +106,7 @@ extension ChatsVC: UITableViewDelegate,UITableViewDataSource{
                 let localDate = pubnubHelper.pubNubDateFormatter(date: date)
                 timeToken.append(localDate)
             }
+            //nj
             nextVC.messages = mcoll
             nextVC.timeToken = timeToken
             nextVC.userPresence = userPresence
