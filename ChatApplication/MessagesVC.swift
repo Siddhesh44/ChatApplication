@@ -23,7 +23,9 @@ class MessagesVC: UIViewController {
     var listener: SubscriptionListener?
     var userName:String!
     var channelName: String!
-    var messages: [String] = []
+    var loadedMessages: [String: [MessageHistoryMessagesPayload]] = [:]
+    
+    var setMessages: [String] = []
     var timeToken: [String] = []
     var userPresence: Timetoken?
     var messageTimeToken: [Timetoken]?
@@ -31,23 +33,18 @@ class MessagesVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        print("###### view did load ########")
         messageTableView.delegate = self
         messageTableView.dataSource = self
         messageTxt.delegate = self
+        
+        pubnubHelper.pubnubDelegate = self
         
         pubnubHelper.pubnubConfig()
         navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
         setNavBar()
         
-        if messages.isEmpty{
-            
-        }else{
-            let numberOfSections = self.messageTableView.numberOfSections
-            let numberOfRows = self.messageTableView.numberOfRows(inSection: numberOfSections-1)
-            let indexPath = IndexPath(row: numberOfRows-1 , section: numberOfSections-1)
-            self.messageTableView.scrollToRow(at: indexPath, at: .middle, animated: true)
-        }
+        pubnubHelper.loadLastMessages(forChannels: [channelName])
         
         //        pubnubHelper.client.fetchMessageActions(channel: channelName) { (result) in
         //            print("$$$$$$$$$$$$$$$$$$$$",result)
@@ -68,18 +65,16 @@ class MessagesVC: UIViewController {
         }
         
         
-        
         listener!.didReceiveMessage = { (message) in
             
             if(self.channelName == message.channel)
             {
                 if let messagesFromUser = message.payload.stringOptional{
                     let messageTime = message.timetoken.timetokenDate
-                    UserDefaults.standard.set(messageTime, forKey: "timeToken")
                     let localDate = self.pubnubHelper.pubNubDateFormatter(date: messageTime)
                     
                     self.timeToken.append(localDate)
-                    self.messages.append(messagesFromUser)
+                    self.setMessages.append(messagesFromUser)
                 }
                 self.messageTableView.reloadData()
                 
@@ -96,12 +91,10 @@ class MessagesVC: UIViewController {
         let viewWidth = navController.navigationBar.frame.size.width
         let viewHeight = navController.navigationBar.frame.size.height
         topView.frame = CGRect(x: 0, y: 0, width: viewWidth, height: viewHeight)
-        //topView.backgroundColor = UIColor.red
         channelNameLbl.frame = CGRect(x: 0, y: 0, width: 300, height: 21)
         channelNameLbl.text = channelName
         channelNameLbl.font = UIFont.boldSystemFont(ofSize: 16)
         indicator.frame = CGRect(x: 0, y: 20, width: 300, height: 21)
-        //indicator.text = "Indicator"
         indicator.font = UIFont.systemFont(ofSize: 10)
         topView.addSubview(channelNameLbl)
         topView.addSubview(indicator)
@@ -148,21 +141,13 @@ class MessagesVC: UIViewController {
 
 extension MessagesVC: UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return messages.count
+        return setMessages.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MessagesCell", for: indexPath) as! MessagesTableViewCell
-        for mt in messageTimeToken!{
-            if mt < userPresence!{
-                cell.message.text = messages[indexPath.row]
-                cell.timeLbl.text = timeToken[indexPath.row]
-            }else{
-                cell.message.text = messages[indexPath.row]
-                cell.timeLbl.text = timeToken[indexPath.row]
-                cell.message.textColor = UIColor.red
-            }
-        }
+        cell.message.text = setMessages[indexPath.row]
+        cell.timeLbl.text = timeToken[indexPath.row]
         return cell
     }
 }
@@ -189,6 +174,35 @@ extension MessagesVC:UITextFieldDelegate{
             self.indicator.text = ""
         }
         return true
+    }
+}
+
+extension MessagesVC:PubNubDelegates{
+    func didGetResults(result: String) {
+        print(result)
+    }
+    
+    func didGetChannelList(result: String, channelList: [String]) { }
+    
+    func loadingLastMessages(result: String, messages: [String : [MessageHistoryMessagesPayload]]) {
+        self.loadedMessages = loadedMessages.merging(messages, uniquingKeysWith: { (first, _) in first })
+        if let channelMessages = loadedMessages[channelName]
+        {
+            for m in channelMessages{
+                setMessages.append(m.message.stringOptional!)
+                let date = m.timetoken.timetokenDate
+                let localDate = pubnubHelper.pubNubDateFormatter(date: date)
+                timeToken.append(localDate)
+            }
+        }
+        messageTableView.reloadData()
+        if setMessages.isEmpty{ }else{
+            let numberOfSections = self.messageTableView.numberOfSections
+            let numberOfRows = self.messageTableView.numberOfRows(inSection: numberOfSections-1)
+            let indexPath = IndexPath(row: numberOfRows-1 , section: numberOfSections-1)
+            self.messageTableView.scrollToRow(at: indexPath, at: .middle, animated: true)
+        }
+        Spinner.stop()
     }
 }
 

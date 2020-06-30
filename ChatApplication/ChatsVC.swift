@@ -49,9 +49,6 @@ class ChatsVC: UIViewController {
         
         pubnubHelper.client.subscribe(to: channels,withPresence: true)
         
-        pubnubHelper.loadLastMessages(forChannels: channels)
-        Spinner.start()
-        
         setUpNavBar()
         
         addChannelView.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
@@ -90,28 +87,7 @@ extension ChatsVC: UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let nextVC = storyboard.instantiateViewController(withIdentifier: "MessagesVC") as! MessagesVC
-        var channelName: String = ""
-        channelName = channels[indexPath.row]
         nextVC.listener = listener
-        if let channelMessages = loadedMessages[channelName]{
-            var mcoll: [String] = []
-            var timeToken: [String] = []
-            var messageTimeToken: [Timetoken] = []
-
-            for m in channelMessages{
-                mcoll.append(m.message.stringOptional!)
-                let date = m.timetoken.timetokenDate
-                messageTimeToken.append(m.timetoken)
-                print("&&&&&&&&&&&&&&",messageTimeToken)
-                let localDate = pubnubHelper.pubNubDateFormatter(date: date)
-                timeToken.append(localDate)
-            }
-            //nj
-            nextVC.messages = mcoll
-            nextVC.timeToken = timeToken
-            nextVC.userPresence = userPresence
-            nextVC.messageTimeToken = messageTimeToken
-        }
         nextVC.userName = user
         nextVC.channelName = channels[indexPath.row]
         self.navigationController?.pushViewController(nextVC, animated: true)
@@ -131,14 +107,8 @@ extension ChatsVC: PubNubDelegates{
         self.channels = channelList
     }
     
-    func loadingLastMessages(result: String, messages: [String: [MessageHistoryMessagesPayload]]) {
-        print("loadingLastMessages",result)
-        print("History:-",messages)
-        
-        self.loadedMessages = loadedMessages.merging(messages, uniquingKeysWith: { (first, _) in first })
-        Spinner.stop()
-        
-    }
+    func loadingLastMessages(result: String, messages: [String: [MessageHistoryMessagesPayload]]) { }
+    
     func didGetResults(result: String) {
         print(result)
     }

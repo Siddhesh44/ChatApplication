@@ -85,6 +85,7 @@ class PubNubHelper {
     
     func loadLastMessages(forChannels: [String])
     {
+        Spinner.start()
         client.fetchMessageHistory(for: forChannels, max: 25, start: nil, end: nil) { (result) in
             print("Loaded History:-",result)
             switch result{
