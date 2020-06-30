@@ -12,18 +12,20 @@ import PubNub
 protocol PubNubDelegates: class{
     func didGetResults(result: String)
     func didGetChannelList(result: String,channelList: [String])
-    func loadingLastMessages(result:String,messages: [String: [String]])
+    func loadingLastMessages(result:String,messages: [String: [MessageHistoryMessagesPayload]])
 }
 
 class PubNubHelper {
     
     var client: PubNub!
     weak var pubnubDelegate: PubNubDelegates?
-    var messageDic: [String: [String]]?
-    var messageCol: [String] = []
+    var messageDic: [String: [MessageHistoryMessagesPayload]]?
+    var messageDetails: [MessageHistoryMessagesPayload] = []
     func pubnubConfig() {
-        let config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
+        var config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
         // config.authKey = "sec-c-NzM3MWM5MWEtZTEwNy00ZDQ2LWE1YTQtMmZlNWUxZmU1MTFi"
+        //        config.uuid = UUID().uuidString
+        //        print("##################",config.uuid)
         client = PubNub(configuration: config)
     }
     
@@ -89,28 +91,28 @@ class PubNubHelper {
             case let .success(response):
                 for c in forChannels{
                     if let response = response[c]?.messages {
-                        self.messageCol = []
+                        self.messageDetails = []
                         for m in response{
-                            if let oldMessages = m.message.stringOptional {
-                                self.messageCol.append(oldMessages)
-                            }
+                            
+                            self.messageDetails.append(m)
                         }
                     }
-                    self.messageDic = [c:self.messageCol]
+                    self.messageDic = [c:self.messageDetails]
                     self.pubnubDelegate?.loadingLastMessages(result: "Success at Loading Messages", messages: self.messageDic!)
                 }
-                //                if let response = response[forChannels[1]]?.messages{
-                //                    for m in response{
-                //                        if let oldMessages = m.message.stringOptional {
-                //                            print("messages",oldMessages)
-                //                            self.pubnubDelegate?.loadingLastMessages(result: "Success at Loading Messages", messages: oldMessages)
-                //                        }
-                //                    }
-            //                }
-                
             case let .failure(error):
                 self.pubnubDelegate?.didGetResults(result: "Error occurred while loading history:-\(error.localizedDescription)")
             }
         }
+    }
+    
+    func pubNubDateFormatter(date: Date) -> String{
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.timeStyle = .short
+        dateFormatter.timeZone = .current
+        let formattedDate = dateFormatter.string(from: date)
+        
+        return formattedDate
     }
 }

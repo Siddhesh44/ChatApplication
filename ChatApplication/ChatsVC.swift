@@ -19,8 +19,9 @@ class ChatsVC: UIViewController {
     var user: String?
     let listener = SubscriptionListener(queue: .main)
     var channels: [String] = []
-    var loadedMessages: [String: [String]] = [:]
-    
+    var loadedMessages: [String: [MessageHistoryMessagesPayload]] = [:]
+    var userPresence: Timetoken?
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -35,11 +36,21 @@ class ChatsVC: UIViewController {
         
         pubnubHelper.pubnubConfig()
         
+        listener.didReceiveSubscription = { event in
+            switch event {
+            case let .presenceChanged(presence):
+                self.userPresence = presence.presenceTimetoken
+            default:
+                break
+            }
+        }
+        
         pubnubHelper.client.add(listener)
         
         pubnubHelper.client.subscribe(to: channels,withPresence: true)
         
         pubnubHelper.loadLastMessages(forChannels: channels)
+        Spinner.start()
         
         setUpNavBar()
         
@@ -82,10 +93,25 @@ extension ChatsVC: UITableViewDelegate,UITableViewDataSource{
         var channelName: String = ""
         channelName = channels[indexPath.row]
         nextVC.listener = listener
-        print("loadedMessages",loadedMessages)
-        print("Messages for specific channel",loadedMessages[channelName]!)
-        nextVC.messages = loadedMessages[channelName]!
-        
+        if let channelMessages = loadedMessages[channelName]{
+            var mcoll: [String] = []
+            var timeToken: [String] = []
+            var messageTimeToken: [Timetoken] = []
+
+            for m in channelMessages{
+                mcoll.append(m.message.stringOptional!)
+                let date = m.timetoken.timetokenDate
+                messageTimeToken.append(m.timetoken)
+                print("&&&&&&&&&&&&&&",messageTimeToken)
+                let localDate = pubnubHelper.pubNubDateFormatter(date: date)
+                timeToken.append(localDate)
+            }
+            nextVC.messages = mcoll
+            nextVC.timeToken = timeToken
+            nextVC.userPresence = userPresence
+            nextVC.messageTimeToken = messageTimeToken
+        }
+        nextVC.userName = user
         nextVC.channelName = channels[indexPath.row]
         self.navigationController?.pushViewController(nextVC, animated: true)
     }
@@ -104,11 +130,13 @@ extension ChatsVC: PubNubDelegates{
         self.channels = channelList
     }
     
-    func loadingLastMessages(result: String, messages: [String: [String]]) {
+    func loadingLastMessages(result: String, messages: [String: [MessageHistoryMessagesPayload]]) {
         print("loadingLastMessages",result)
         print("History:-",messages)
         
         self.loadedMessages = loadedMessages.merging(messages, uniquingKeysWith: { (first, _) in first })
+        Spinner.stop()
+        
     }
     func didGetResults(result: String) {
         print(result)

@@ -172,42 +172,52 @@
                                 <rect key="frame" x="0.0" y="88" width="414" height="740"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
                                 <prototypes>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="MessagesCell" rowHeight="53" id="KRl-HU-09p" customClass="MessagesTableViewCell" customModule="ChatApplication" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="28" width="414" height="53"/>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="MessagesCell" rowHeight="73" id="KRl-HU-09p" customClass="MessagesTableViewCell" customModule="ChatApplication" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="28" width="414" height="73"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="KRl-HU-09p" id="wZd-OA-NAd">
-                                            <rect key="frame" x="0.0" y="0.0" width="414" height="53"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="73"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="NDZ-GQ-RQW">
-                                                    <rect key="frame" x="20" y="11" width="297" height="31"/>
+                                                    <rect key="frame" x="20" y="11" width="297" height="51"/>
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Message" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZLq-eS-if8">
-                                                            <rect key="frame" x="5" y="5" width="287" height="21"/>
+                                                            <rect key="frame" x="5" y="5" width="287" height="20.5"/>
                                                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                            <nil key="textColor"/>
+                                                            <nil key="highlightedColor"/>
+                                                        </label>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="11:11 PM" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="O5x-nl-M8M">
+                                                            <rect key="frame" x="246" y="30.5" width="46" height="15"/>
+                                                            <fontDescription key="fontDescription" type="system" weight="light" pointSize="12"/>
                                                             <nil key="textColor"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                     </subviews>
                                                     <color key="backgroundColor" systemColor="systemGreenColor" red="0.20392156859999999" green="0.78039215689999997" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                     <constraints>
-                                                        <constraint firstItem="ZLq-eS-if8" firstAttribute="leading" secondItem="NDZ-GQ-RQW" secondAttribute="leading" constant="5" id="9OG-Hz-OF6"/>
-                                                        <constraint firstAttribute="trailing" secondItem="ZLq-eS-if8" secondAttribute="trailing" constant="5" id="Kbb-no-sER"/>
-                                                        <constraint firstAttribute="bottom" secondItem="ZLq-eS-if8" secondAttribute="bottom" constant="5" id="hwY-E3-JSO"/>
-                                                        <constraint firstItem="ZLq-eS-if8" firstAttribute="top" secondItem="NDZ-GQ-RQW" secondAttribute="top" constant="5" id="xIX-B1-jBg"/>
+                                                        <constraint firstItem="ZLq-eS-if8" firstAttribute="leading" secondItem="NDZ-GQ-RQW" secondAttribute="leading" constant="5" id="2Hj-c6-77K"/>
+                                                        <constraint firstAttribute="bottom" secondItem="O5x-nl-M8M" secondAttribute="bottom" constant="5.5" id="2VE-jk-orq"/>
+                                                        <constraint firstItem="ZLq-eS-if8" firstAttribute="top" secondItem="NDZ-GQ-RQW" secondAttribute="top" constant="5" id="4BN-Zk-Q5X"/>
+                                                        <constraint firstItem="O5x-nl-M8M" firstAttribute="top" secondItem="ZLq-eS-if8" secondAttribute="bottom" constant="5" id="TGn-IL-A7y"/>
+                                                        <constraint firstItem="O5x-nl-M8M" firstAttribute="top" secondItem="ZLq-eS-if8" secondAttribute="bottom" constant="5" id="hiI-V5-FBN"/>
+                                                        <constraint firstAttribute="trailing" secondItem="O5x-nl-M8M" secondAttribute="trailing" constant="5" id="r37-Wt-yrV"/>
+                                                        <constraint firstAttribute="trailing" secondItem="ZLq-eS-if8" secondAttribute="trailing" constant="5" id="uuH-Sv-gh5"/>
                                                     </constraints>
                                                 </view>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="NDZ-GQ-RQW" firstAttribute="top" secondItem="wZd-OA-NAd" secondAttribute="top" constant="11" id="JBv-rF-UhP"/>
-                                                <constraint firstAttribute="bottom" secondItem="NDZ-GQ-RQW" secondAttribute="bottom" constant="11" id="Mtd-er-6ev"/>
-                                                <constraint firstItem="NDZ-GQ-RQW" firstAttribute="leading" secondItem="wZd-OA-NAd" secondAttribute="leading" constant="20" id="PgM-9q-UtS"/>
-                                                <constraint firstAttribute="trailing" secondItem="NDZ-GQ-RQW" secondAttribute="trailing" constant="97" id="p6Z-Hq-yCR"/>
+                                                <constraint firstAttribute="trailing" secondItem="NDZ-GQ-RQW" secondAttribute="trailing" constant="97" id="4ah-NV-6or"/>
+                                                <constraint firstItem="NDZ-GQ-RQW" firstAttribute="top" secondItem="wZd-OA-NAd" secondAttribute="top" constant="11" id="eo4-8E-3QH"/>
+                                                <constraint firstAttribute="bottom" secondItem="NDZ-GQ-RQW" secondAttribute="bottom" constant="11" id="nEy-ZE-Eqq"/>
+                                                <constraint firstItem="NDZ-GQ-RQW" firstAttribute="leading" secondItem="wZd-OA-NAd" secondAttribute="leading" constant="20" id="usU-Vw-n2U"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                         <connections>
                                             <outlet property="bubbleBackgroundView" destination="NDZ-GQ-RQW" id="esL-G7-FGj"/>
                                             <outlet property="message" destination="ZLq-eS-if8" id="NHa-sE-I0F"/>
+                                            <outlet property="timeLbl" destination="O5x-nl-M8M" id="ytK-uP-j5i"/>
                                         </connections>
                                     </tableViewCell>
                                 </prototypes>

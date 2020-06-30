@@ -13,6 +13,7 @@ class MessagesTableViewCell: UITableViewCell {
     
     @IBOutlet weak var bubbleBackgroundView: UIView!
     @IBOutlet weak var message: UILabel!
+    @IBOutlet weak var timeLbl: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
