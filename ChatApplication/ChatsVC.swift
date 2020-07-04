@@ -15,13 +15,14 @@ class ChatsVC: UIViewController {
     @IBOutlet var addChannelView: UIView!
     @IBOutlet weak var addNewChannelTxt: UITextField!
     
+    var client: PubNub!
     var pubnubHelper = PubNubHelper()
     var user: String?
     let listener = SubscriptionListener(queue: .main)
     var channels: [String] = []
     var loadedMessages: [String: [MessageHistoryMessagesPayload]] = [:]
     var userPresence: Timetoken?
-        
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -34,20 +35,19 @@ class ChatsVC: UIViewController {
         navigationController?.isNavigationBarHidden = false
         navigationItem.title = "Chats"
         
-        pubnubHelper.pubnubConfig()
+        //        listener.didReceiveSubscription = { event in
+        //            switch event {
+        //            case let .presenceChanged(presence):
+        //                self.userPresence = presence.presenceTimetoken
+        //            default:
+        //                break
+        //            }
+        //        }
         
-        listener.didReceiveSubscription = { event in
-            switch event {
-            case let .presenceChanged(presence):
-                self.userPresence = presence.presenceTimetoken
-            default:
-                break
-            }
-        }
+        client.add(listener)
         
-        pubnubHelper.client.add(listener)
-        
-        pubnubHelper.client.subscribe(to: channels,withPresence: true)
+        client.subscribe(to: channels,withPresence: true)
+        pubnubHelper.loadLastMessages(forChannels: channels,client: client)
         
         setUpNavBar()
         
@@ -55,7 +55,7 @@ class ChatsVC: UIViewController {
     }
     
     @IBAction func cancelBtn(_ sender: UIButton) {
-        addChannelView.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
+        //addChannelView.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
     }
     
     @IBAction func addNewChannelBtnTapped(_ sender: UIButton) {
@@ -63,13 +63,16 @@ class ChatsVC: UIViewController {
     }
     
     func setUpNavBar(){
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "icons8-add-64"), style: .plain, target: self, action: #selector(ChatsVC.addChannelBtnTapped))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Leave", style: .plain, target: self, action: #selector(ChatsVC.leaveBtnTapped))
     }
     
-    @objc func addChannelBtnTapped(){
-        print("add channel button pressed")
-        addChannelView.frame = CGRect(x: 120, y: 70, width: 300, height: 300)
-        view.addSubview(addChannelView)
+    @objc func leaveBtnTapped(){
+        print("Leave button pressed")
+        client.unsubscribeAll()
+        navigationController?.popViewController(animated: true)
+        
+        //        addChannelView.frame = CGRect(x: 120, y: 70, width: 300, height: 300)
+        //        view.addSubview(addChannelView)
     }
 }
 
@@ -87,9 +90,13 @@ extension ChatsVC: UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let nextVC = storyboard.instantiateViewController(withIdentifier: "MessagesVC") as! MessagesVC
+        nextVC.client = client
         nextVC.listener = listener
         nextVC.userName = user
         nextVC.channelName = channels[indexPath.row]
+        if let channelMessages = loadedMessages[channels[indexPath.row]] {
+            nextVC.loadedMessages = channelMessages
+        }
         self.navigationController?.pushViewController(nextVC, animated: true)
     }
 }
@@ -107,7 +114,10 @@ extension ChatsVC: PubNubDelegates{
         self.channels = channelList
     }
     
-    func loadingLastMessages(result: String, messages: [String: [MessageHistoryMessagesPayload]]) { }
+    func loadingLastMessages(result: String, messages: [String: [MessageHistoryMessagesPayload]]) {
+        self.loadedMessages = loadedMessages.merging(messages, uniquingKeysWith: { (first, _) in first })
+        Spinner.stop()
+    }
     
     func didGetResults(result: String) {
         print(result)

@@ -11,11 +11,15 @@ import PubNub
 
 class Message{
     
-    var messages: String?
-    var time: Date?
+    var message: String?
+    var messageTime: String?
+    var userName: String?
+    var timeToken: Timetoken?
     
-    init(message: MessageHistoryMessagesPayload){
-        self.messages = message.message.stringOptional
-        self.time = message.timetoken.timetokenDate
+    init(data: [String:Any]){
+        message = data["Message"] as? String
+        messageTime = data["MessageTime"] as? String
+        userName = data["UserName"] as? String
+        timeToken = data["MessageTimeToken"] as? Timetoken
     }
 }

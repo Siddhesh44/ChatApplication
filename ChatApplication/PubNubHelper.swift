@@ -17,18 +17,11 @@ protocol PubNubDelegates: class{
 
 class PubNubHelper {
     
-    var client: PubNub!
     weak var pubnubDelegate: PubNubDelegates?
     var messageDic: [String: [MessageHistoryMessagesPayload]]?
     var messageDetails: [MessageHistoryMessagesPayload] = []
-    func pubnubConfig() {
-        var config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
-        // config.authKey = "sec-c-NzM3MWM5MWEtZTEwNy00ZDQ2LWE1YTQtMmZlNWUxZmU1MTFi"
-        //        config.uuid = UUID().uuidString
-        //        print("##################",config.uuid)
-        client = PubNub(configuration: config)
-    }
     
+    /*
     func createUser(userName: PubNubUser) {
         client.create(user: userName) { (result) in
             switch result{
@@ -51,8 +44,9 @@ class PubNubHelper {
             }
         }
     }
+ */
     
-    func addChannels(){
+    func addChannels(client: PubNub!){
         client.add(channels: ["Group1", "Friend1"],to: "Sid") { result in
             switch result {
             case let .success(response):
@@ -72,7 +66,7 @@ class PubNubHelper {
         }
     }
     
-    func channelList(userName: String){
+    func channelList(userName: String,client: PubNub!){
         client.listChannels(for: userName) { result in
             switch result {
             case let .success(response):
@@ -83,10 +77,10 @@ class PubNubHelper {
         }
     }
     
-    func loadLastMessages(forChannels: [String])
+    func loadLastMessages(forChannels: [String],client: PubNub!)
     {
         Spinner.start()
-        client.fetchMessageHistory(for: forChannels, max: 25, start: nil, end: nil) { (result) in
+        client.fetchMessageHistory(for: forChannels, max: 25, start: nil, end: nil,metaInResponse: true) { (result) in
             print("Loaded History:-",result)
             switch result{
             case let .success(response):
@@ -94,7 +88,6 @@ class PubNubHelper {
                     if let response = response[c]?.messages {
                         self.messageDetails = []
                         for m in response{
-                            
                             self.messageDetails.append(m)
                         }
                     }

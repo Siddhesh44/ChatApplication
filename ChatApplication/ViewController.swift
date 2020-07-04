@@ -11,6 +11,7 @@ import PubNub
 
 class ViewController: UIViewController {
     
+    var client: PubNub!
     var pubnubHelper = PubNubHelper()
     
     @IBOutlet weak var newUserTxt: UITextField!
@@ -28,8 +29,6 @@ class ViewController: UIViewController {
         
         pubnubHelper.pubnubDelegate = self
         
-        pubnubHelper.pubnubConfig()
-        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -40,10 +39,15 @@ class ViewController: UIViewController {
     // MARK: Connect User
     @IBAction func btn(_ sender: UIButton) {
         userName = txt.text!
+        
+        var config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
+        config.uuid = userName!
+        client = PubNub(configuration: config)
+        
         if userName == "Sid"{
-            fixedChannels = ["s1s2Ch","Ch","G1"]
+            fixedChannels = ["new4"]
         } else if userName == "Siddhesh"{
-            fixedChannels = ["s1s2Ch","Ch","G1"]
+            fixedChannels = ["new4"]
         }
         
         // pubnubHelper.fetchUsers(userName: userName!)
@@ -52,6 +56,7 @@ class ViewController: UIViewController {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let nextVC = storyboard.instantiateViewController(withIdentifier: "ChatsVC") as! ChatsVC
         nextVC.user = userName
+        nextVC.client = client
         if let fixedChannels = fixedChannels{
             nextVC.channels = fixedChannels
         }
@@ -63,11 +68,14 @@ class ViewController: UIViewController {
     @IBAction func createNewUser(_ sender: UIButton) {
         newUserName = newUserTxt.text!
         print("UserName:-",newUserName!)
+        //        var config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
+        //        config.uuid = newUserName!
+        //        client = PubNub(configuration: config)
         
         let newUser = UserObject(name: newUserName!, id: UUID().uuidString, externalId: "externalId", profileURL: "profileURL", email: "email", custom: ["custom": "custom"], created: Date(), updated:Date(), eTag: "eTag")
         print("userobject:-",newUser)
         
-        pubnubHelper.createUser(userName: newUser)
+       // pubnubHelper.createUser(userName: newUser)
         newUserTxt.text = ""
         
     }
