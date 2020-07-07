@@ -27,25 +27,17 @@ class MessagesVC: UIViewController {
     var loadedMessages: [MessageHistoryMessagesPayload] = []
     
     var messagesData = [Message]()
-    
-    //    var setMessages: [String] = []
-    //    var setMessageTime: [String] = []
-    //    var metaData: [String] = []
-    //    var messagesTimeToken: [Timetoken] = []
-    
     var isUserEditingMessage: Bool = false
     var selectedMessageTimetoken: Timetoken?
-    var readRecepitColor = UIColor.red
+    var readRecepitColor = UIColor.gray
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         pubnubHelper.pubnubDelegate = self
-        
         messageTableView.delegate = self
         messageTableView.dataSource = self
         messageTxt.delegate = self
-        
         
         navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
         setNavBar()
@@ -61,60 +53,57 @@ class MessagesVC: UIViewController {
             let userName = m.meta!.stringOptional!
             let messageTimeToken = m.timetoken
             
-            print("Data",message,messageTimeToken,messageTime,userName)
+           // print("Data",message,messageTimeToken,messageTime,userName)
             
             let md = Message(data: ["Message":message,"MessageTime":messageTime,"UserName":userName,"MessageTimeToken":messageTimeToken])
             
             messagesData.append(md)
-            
-            // messagesData.append(["Message":message,"MessageTime":messageTime,"UserName":userName,"MessageTimeToken":messageTimeToken])
-            
-            //            setMessages.append(m.message.stringOptional!)
-            //            setMessageTime.append(localDate)
-            //            metaData.append(m.meta!.stringOptional!)
-            //            messagesTimeToken.append(m.timetoken)
         }
         
+        //        client.fetchMessageActions(channel: channelName) { (result) in
+        //            print("Message Action",result)
+        //        }
         
-//                        if let  lastTimeToken = loadedMessages.last?.timetoken.timetokenDate{
-//                            print("lastTimeToken",lastTimeToken)
-//                            let currentTimeToken = Date()
-//                            print("currentTimeToken",currentTimeToken)
-//        //                    Timetoken.init(bitPattern: Int64(currentTimeToken.timeIntervalSinceNow))
-//
-//                            let start = loadedMessages.last!.timetoken
-//                            let end = Timetoken.init(CUnsignedLongLong(currentTimeToken.timeIntervalSinceReferenceDate))
-//                                //Timetoken.init(currentTimeToken.timeIntervalSinceNow)
-//                                //Timetoken.init(bitPattern: currentTimeToken.toMillis())
-//
-//                            print("lastTimeToken",pubnubHelper.pubNubDateFormatter(date: lastTimeToken))
-//                            print("currentTimeToken",pubnubHelper.pubNubDateFormatter(date: currentTimeToken))
-//                            print("start",pubnubHelper.pubNubDateFormatter(date: start.timetokenDate))
-//                            print("end",pubnubHelper.pubNubDateFormatter(date: end.timetokenDate))
-//
-//
-//                            if currentTimeToken > lastTimeToken{
-//                                print("need to load messages")
-//                                client.fetchMessageHistory(for: [channelName],max: 25,start: start,end: end) { (result) in
-//                                    print("loaded missing messages",result)
-//                                }
-//                            }else{
-//                                print("you are upto date")
-//                            }
-//                        }
+        if let  lastTimeToken = loadedMessages.last?.timetoken.timetokenDate{
+            let currentTimeToken = Date()
+            let start = loadedMessages.last!.timetoken
+            let end = Timetoken(Date().toNanos())
+            
+            if currentTimeToken > lastTimeToken{
+                print("need to load messages")
+                client.fetchMessageHistory(for: [channelName],max: 25,start: start,end: end,metaInResponse: true ) { (result) in
+                    switch result{
+                    case let .success(Response):
+                        if let missingMessages = Response[self.channelName]?.messages{
+                            for m in missingMessages{
+                                
+                                let date = m.timetoken.timetokenDate
+                                let localDate = self.pubnubHelper.pubNubDateFormatter(date: date)
+                                
+                                let message = m.message.stringOptional!
+                                let messageTime = localDate
+                                let userName = m.meta!.stringOptional!
+                                let messageTimeToken = m.timetoken
+                                
+                                let md = Message(data: ["Message":message,"MessageTime":messageTime,"UserName":userName,"MessageTimeToken":messageTimeToken])
+                                
+                                self.messagesData.append(md)
+                            }
+                        }
+                        self.messageTableView.reloadData()
+                        self.manageTable()
+                    case let .failure(Error):
+                        print(Error)
+                    }
+                }
+            }else{
+                print("you are upto date")
+            }
+        }
         
         manageTable()
+        manageMessageActions()
         
-        client.fetchMessageActions(channel: channelName) { (result) in
-            print("Message Action",result)
-        }
-        
-        listener!.didReceiveMessageAction = { event in
-            print("@@@@@@@@@@@@@",event)
-            if event.associatedValue.type.stringOptional! == "update"{
-            }
-            
-        }
         listener!.didReceiveSubscription = { event in
             switch event {
             case let .signalReceived(signal):
@@ -129,50 +118,34 @@ class MessagesVC: UIViewController {
                         }
                     }
                 }
-                //            case let .messageReceived(response):
-                //                if response.publisher != self.userName{
-                //                    let action = MyAppMessageAction(type: "receipt", value: "message_readed")
-                //
-                //                    self.client.addMessageAction(channel: self.channelName, message: action, messageTimetoken: response.timetoken) { result in
-                //                        switch result{
-                //                        case let .success(response):
-                //                            print("message readed: \(response)")
-                //                            self.readRecepitColor = UIColor.blue
-                //                            self.messageTableView.reloadData()
-                //                        case let .failure(error):
-                //                            print("Error from failed response: \(error.localizedDescription)")
-                //                        }
-                //                    }
-                //                }else{
-                //
-                //                }
-                
             default:
                 break
             }
             
         }
         
-        
         listener!.didReceiveMessage = { (message) in
-            
             if let messagesFromUser = message.payload.stringOptional{
                 let messageTime = message.timetoken.timetokenDate
                 let localDate = self.pubnubHelper.pubNubDateFormatter(date: messageTime)
                 if message.userMetadata!.stringOptional! != self.userName{
-                    //                    self.setMessageTime.append(localDate)
-                    //                    self.setMessages.append(messagesFromUser)
-                    //                    self.metaData.append(message.userMetadata!.stringOptional!)
-                    
-                    //  self.messagesData.append(["Message":messagesFromUser,"MessageTime":localDate,"UserName":message.userMetadata!.stringOptional!,"MessageTimeToken":message.timetoken])
-                    
                     let md = Message(data: ["Message":messagesFromUser,"MessageTime":localDate,"UserName":message.userMetadata!.stringOptional!,"MessageTimeToken":message.timetoken])
                     self.messagesData.append(md)
                 }
             }
+            if message.publisher?.stringOptional! != self.userName{
+                let action = MyAppMessageAction(type: "receipt", value: "message_Recevied")
+                self.client.addMessageAction(channel: self.channelName, message: action, messageTimetoken: message.timetoken) { result in
+                    switch result{
+                    case let .success(response):
+                        print("message Recevied: \(response)")
+                    case let .failure(error):
+                        print("Error from failed response: \(error.localizedDescription)")
+                    }
+                }
+            }
             self.messageTableView.reloadData()
             self.manageTable()
-            
         }
     }
     
@@ -213,11 +186,6 @@ class MessagesVC: UIViewController {
             case let .success(response):
                 let messageTime = response.timetoken.timetokenDate
                 let localDate = self.pubnubHelper.pubNubDateFormatter(date: messageTime)
-                //                self.setMessageTime.append(localDate)
-                //                self.setMessages.append(messageString)
-                //                self.metaData.append(self.userName)
-                
-                //  self.messagesData.append(["Message":messageString,"MessageTime":localDate,"UserName": self.userName!,"MessageTimeToken":response.timetoken])
                 
                 let md = Message(data: ["Message":messageString,"MessageTime":localDate,"UserName": self.userName!,"MessageTimeToken":response.timetoken])
                 self.messagesData.append(md)
@@ -231,7 +199,6 @@ class MessagesVC: UIViewController {
                 //                        print("Error from failed response: \(error.localizedDescription)")
                 //                    }
                 //                }
-                
                 self.messageTableView.reloadData()
                 self.manageTable()
             case let .failure(error):
@@ -239,6 +206,27 @@ class MessagesVC: UIViewController {
             }
         }
         messageTxt.text = ""
+    }
+    
+    func manageMessageActions(){
+        
+        listener!.didReceiveMessageAction = { event in
+            print("didReceiveMessageAction",event)
+            if event.associatedValue.type.stringOptional! == "update"{
+                let newMessageTimeToken = event.associatedValue.messageTimetoken
+                
+                if let index = self.messagesData.firstIndex(where: { $0.timeToken == newMessageTimeToken}) {
+                    self.messagesData[index].message = event.associatedValue.value.stringOptional!
+                }
+                self.messageTableView.reloadData()
+                
+            }  else if (event.associatedValue.type.stringOptional! == "receipt" && event.associatedValue.value.stringOptional! == "message_Recevied"){
+                if event.associatedValue.uuid != self.userName{
+                    self.readRecepitColor = UIColor.red
+                    self.messageTableView.reloadData()
+                }
+            }
+        }
     }
     
     @IBAction func sendMessageBtn(_ sender: UIButton) {
@@ -249,18 +237,6 @@ class MessagesVC: UIViewController {
             if isUserEditingMessage{
                 print("EditingMessage")
                 let editedText:String = messageTxt.text!
-                
-                let timeTokenString:String = String(describing: selectedMessageTimetoken)
-                
-//                client.publish(channel: channelName, message: ["type":"update","timetoken": timeTokenString,"text":editedText],meta: userName) { (result) in
-//                    switch result {
-//                    case let .success(response):
-//                        print("Successful Publish Response: \(response)")
-//                    case let .failure(error):
-//                        print("Failed Publish Response: \(error.localizedDescription)")
-//                    }
-//                }
-                
                 let action = MyAppMessageAction(type: "update", value: editedText)
                 client.addMessageAction(channel: channelName, message: action, messageTimetoken: selectedMessageTimetoken!) { (result) in
                     switch result {
@@ -270,8 +246,7 @@ class MessagesVC: UIViewController {
                         print("Error occured At Editing Message: \(error.localizedDescription)")
                     }
                 }
-                
-                
+                messageTxt.text = ""
                 isUserEditingMessage = false
             } else {
                 print("PublishingMessage")
@@ -298,22 +273,6 @@ extension MessagesVC: UITableViewDelegate,UITableViewDataSource{
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MessagesCell", for: indexPath) as! MessagesTableViewCell
-        //        if metaData[indexPath.row] == userName{
-        //            cell.bubbleBackgroundView.backgroundColor = UIColor.green
-        //            cell.readReceipt.image = UIImage(systemName: "checkmark")
-        //            cell.message.text = setMessages[indexPath.row]
-        //            cell.timeLbl.text = setMessageTime[indexPath.row]
-        //            cell.readReceipt.tintColor = readRecepitColor
-        //        }else{
-        //            cell.bubbleBackgroundView.backgroundColor = UIColor.white
-        //            cell.readReceipt.image = nil
-        //            cell.message.text = setMessages[indexPath.row]
-        //            cell.timeLbl.text = setMessageTime[indexPath.row]
-        //            cell.readReceipt.tintColor = readRecepitColor
-        //        }
-        
-        //  let currentUser = messagesData[indexPath.row]["UserName"] as! String
-        
         let currentUser = messagesData[indexPath.row].userName
         if currentUser == userName{
             cell.setMessage(data: messagesData[indexPath.row], readRC: readRecepitColor, readRI: "checkmark", ChatBBC: UIColor.green)
@@ -376,7 +335,7 @@ extension MessagesVC:PubNubDelegates{
 }
 
 extension Date {
-    func toMillis() -> Int64! {
-        return Int64(self.timeIntervalSince1970 * 1000)
+    func toNanos() -> UInt64! {
+        return UInt64(self.timeIntervalSince1970 * 10000000)
     }
 }
