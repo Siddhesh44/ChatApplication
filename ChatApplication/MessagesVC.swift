@@ -25,11 +25,14 @@ class MessagesVC: UIViewController {
     var userName:String!
     var channelName: String!
     var loadedMessages: [MessageHistoryMessagesPayload] = []
+    var updatedMessages: [MessageHistoryMessagesPayload] = []
     
     var messagesData = [Message]()
     var isUserEditingMessage: Bool = false
     var selectedMessageTimetoken: Timetoken?
     var readRecepitColor = UIColor.gray
+    
+    var updateChannel: String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,6 +47,25 @@ class MessagesVC: UIViewController {
         
         print("messages on channel",loadedMessages)
         
+        updateChannel = channelName + "Update"
+        
+        client.fetchMessageHistory(for: [updateChannel],max: 25) { (result) in
+            switch result{
+            case let .success(response):
+                print("#######",response)
+                self.updatedMessages.append(contentsOf: response[self.updateChannel]!.messages)
+                for m in self.updatedMessages{
+                    let updatedMessageTimeToken = Timetoken((m.message["timetoken"]?.stringOptional!)!)
+                    if let text = m.message["text"]{
+                        if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
+                            self.messagesData[index].message = text.stringOptional!
+                        }
+                    }
+                }
+            case let .failure(Error):
+                print(Error.localizedDescription)
+            }
+        }
         for m in loadedMessages{
             let date = m.timetoken.timetokenDate
             let localDate = pubnubHelper.pubNubDateFormatter(date: date)
@@ -53,7 +75,7 @@ class MessagesVC: UIViewController {
             let userName = m.meta!.stringOptional!
             let messageTimeToken = m.timetoken
             
-           // print("Data",message,messageTimeToken,messageTime,userName)
+            // print("Data",message,messageTimeToken,messageTime,userName)
             
             let md = Message(data: ["Message":message,"MessageTime":messageTime,"UserName":userName,"MessageTimeToken":messageTimeToken])
             
@@ -125,6 +147,7 @@ class MessagesVC: UIViewController {
         }
         
         listener!.didReceiveMessage = { (message) in
+            print("didReceiveMessage",message)
             if let messagesFromUser = message.payload.stringOptional{
                 let messageTime = message.timetoken.timetokenDate
                 let localDate = self.pubnubHelper.pubNubDateFormatter(date: messageTime)
@@ -133,6 +156,18 @@ class MessagesVC: UIViewController {
                     self.messagesData.append(md)
                 }
             }
+            
+            //            if message.payload["type"] == "update"{
+            //                print("#############")
+            //                print(message.payload["type"]!)
+            //                print(message.payload["timetoken"]!)
+            //                print(message.payload["text"]!)
+            //                print(message.payload["userName"]!)
+            //
+            ////                if let index = self.messagesData.firstIndex(where: { $0.timeToken == }) {
+            ////                }
+            //            }
+            
             if message.publisher?.stringOptional! != self.userName{
                 let action = MyAppMessageAction(type: "receipt", value: "message_Recevied")
                 self.client.addMessageAction(channel: self.channelName, message: action, messageTimetoken: message.timetoken) { result in
@@ -237,16 +272,36 @@ class MessagesVC: UIViewController {
             if isUserEditingMessage{
                 print("EditingMessage")
                 let editedText:String = messageTxt.text!
-                let action = MyAppMessageAction(type: "update", value: editedText)
-                client.addMessageAction(channel: channelName, message: action, messageTimetoken: selectedMessageTimetoken!) { (result) in
+                print("%%%%%%%%",editedText)
+                let timeTokenString:String = String(describing: selectedMessageTimetoken!)
+                
+                client.publish(channel: updateChannel, message: ["type":"update","timetoken": timeTokenString,"text":editedText,"userName":userName]) { (result) in
                     switch result {
                     case let .success(response):
-                        print("Successful At Editing Message: \(response)")
+                        print("Successful Publish Updated Message: \(response)")
+                        if let index = self.messagesData.firstIndex(where: { $0.timeToken == self.selectedMessageTimetoken}) {
+                            self.messagesData[index].message = editedText
+                        }
+                        self.indicator.text = ""
+                        self.messageTableView.reloadData()
+                        self.manageTable()
                     case let .failure(error):
-                        print("Error occured At Editing Message: \(error.localizedDescription)")
+                        self.indicator.text = ""
+                        print("Failed Publish Updated Message: \(error.localizedDescription)")
                     }
                 }
+                
+                //                let action = MyAppMessageAction(type: "update", value: editedText)
+                //                client.addMessageAction(channel: channelName, message: action, messageTimetoken: selectedMessageTimetoken!) { (result) in
+                //                    switch result {
+                //                    case let .success(response):
+                //                        print("Successful At Editing Message: \(response)")
+                //                    case let .failure(error):
+                //                        print("Error occured At Editing Message: \(error.localizedDescription)")
+                //                    }
+                //                }
                 messageTxt.text = ""
+                indicator.text = ""
                 isUserEditingMessage = false
             } else {
                 print("PublishingMessage")

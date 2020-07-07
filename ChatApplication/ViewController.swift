@@ -45,9 +45,9 @@ class ViewController: UIViewController {
         client = PubNub(configuration: config)
         
         if userName == "Sid"{
-            fixedChannels = ["new7"]
+            fixedChannels = ["new14"]
         } else if userName == "Siddhesh"{
-            fixedChannels = ["new7"]
+            fixedChannels = ["new14"]
         }
         
         // pubnubHelper.fetchUsers(userName: userName!)
