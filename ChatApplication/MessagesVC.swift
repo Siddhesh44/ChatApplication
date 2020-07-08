@@ -49,6 +49,8 @@ class MessagesVC: UIViewController {
         
         updateChannel = channelName + "Update"
         
+        client.subscribe(to: [updateChannel],withPresence: true)
+        
         client.fetchMessageHistory(for: [updateChannel],max: 25) { (result) in
             switch result{
             case let .success(response):
@@ -56,10 +58,20 @@ class MessagesVC: UIViewController {
                 self.updatedMessages.append(contentsOf: response[self.updateChannel]!.messages)
                 for m in self.updatedMessages{
                     let updatedMessageTimeToken = Timetoken((m.message["timetoken"]?.stringOptional!)!)
-                    if let text = m.message["text"]{
-                        if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
-                            self.messagesData[index].message = text.stringOptional!
+                    if m.message["type"]?.stringOptional! == "update"{
+                        if let text = m.message["text"]{
+                            if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
+                                self.messagesData[index].message = text.stringOptional!
+                            }
                         }
+                        self.messageTableView.reloadData()
+                    } else if m.message["type"]?.stringOptional! == "delete"{
+                        if m.message["userName"]?.stringOptional! == self.userName{
+                            if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
+                                self.messagesData.remove(at: index)
+                            }
+                        }
+                        self.messageTableView.reloadData()
                     }
                 }
             case let .failure(Error):
@@ -148,25 +160,33 @@ class MessagesVC: UIViewController {
         
         listener!.didReceiveMessage = { (message) in
             print("didReceiveMessage",message)
-            if let messagesFromUser = message.payload.stringOptional{
-                let messageTime = message.timetoken.timetokenDate
-                let localDate = self.pubnubHelper.pubNubDateFormatter(date: messageTime)
-                if message.userMetadata!.stringOptional! != self.userName{
-                    let md = Message(data: ["Message":messagesFromUser,"MessageTime":localDate,"UserName":message.userMetadata!.stringOptional!,"MessageTimeToken":message.timetoken])
-                    self.messagesData.append(md)
+            if message.channel == self.updateChannel{
+                if message.payload["type"] == "update"{
+                    print("#############")
+                    print(message.payload["type"]!)
+                    print(message.payload["timetoken"]!)
+                    print(message.payload["text"]!)
+                    print(message.payload["userName"]!)
+                    
+                    let updatedMessageTimeToken = Timetoken((message.payload["timetoken"]?.stringOptional!)!)
+                    if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
+                        self.messagesData[index].message = message.payload["text"]?.stringOptional!
+                    }
+                    self.indicator.text = ""
+                    self.messageTableView.reloadData()
+                    self.manageTable()
+                    
+                }
+            }else{
+                if let messagesFromUser = message.payload.stringOptional{
+                    let messageTime = message.timetoken.timetokenDate
+                    let localDate = self.pubnubHelper.pubNubDateFormatter(date: messageTime)
+                    if message.userMetadata!.stringOptional! != self.userName{
+                        let md = Message(data: ["Message":messagesFromUser,"MessageTime":localDate,"UserName":message.userMetadata!.stringOptional!,"MessageTimeToken":message.timetoken])
+                        self.messagesData.append(md)
+                    }
                 }
             }
-            
-            //            if message.payload["type"] == "update"{
-            //                print("#############")
-            //                print(message.payload["type"]!)
-            //                print(message.payload["timetoken"]!)
-            //                print(message.payload["text"]!)
-            //                print(message.payload["userName"]!)
-            //
-            ////                if let index = self.messagesData.firstIndex(where: { $0.timeToken == }) {
-            ////                }
-            //            }
             
             if message.publisher?.stringOptional! != self.userName{
                 let action = MyAppMessageAction(type: "receipt", value: "message_Recevied")
@@ -290,16 +310,6 @@ class MessagesVC: UIViewController {
                         print("Failed Publish Updated Message: \(error.localizedDescription)")
                     }
                 }
-                
-                //                let action = MyAppMessageAction(type: "update", value: editedText)
-                //                client.addMessageAction(channel: channelName, message: action, messageTimetoken: selectedMessageTimetoken!) { (result) in
-                //                    switch result {
-                //                    case let .success(response):
-                //                        print("Successful At Editing Message: \(response)")
-                //                    case let .failure(error):
-                //                        print("Error occured At Editing Message: \(error.localizedDescription)")
-                //                    }
-                //                }
                 messageTxt.text = ""
                 indicator.text = ""
                 isUserEditingMessage = false
@@ -339,13 +349,45 @@ extension MessagesVC: UITableViewDelegate,UITableViewDataSource{
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.selectedMessageTimetoken = self.messagesData[indexPath.row].timeToken
+        
+        let alert = UIAlertController(title: "Message", message: "Please Select an Option", preferredStyle: .actionSheet)
+        
+        let editAction = UIAlertAction(title: "Edit", style: .default) { (_) in
+            self.isUserEditingMessage = true
+            print("selectedMessageTimetoken:-",self.selectedMessageTimetoken!)
+            self.messageTxt.becomeFirstResponder()
+        }
+        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { (_) in
+            print("DeletingMessage")
+            let timeTokenString:String = String(describing: self.selectedMessageTimetoken!)
+            self.client.publish(channel: self.updateChannel, message: ["type":"delete","timetoken": timeTokenString,"text":"","userName":self.userName]) { (result) in
+                switch result {
+                case let .success(response):
+                    print("Success at Deleting Message: \(response)")
+                    if let index = self.messagesData.firstIndex(where: { $0.timeToken == self.selectedMessageTimetoken}) {
+                        self.messagesData.remove(at: index)
+                    }
+                    self.messageTableView.reloadData()
+                    self.manageTable()
+                case let .failure(error):
+                    print("Failed to Delete Message: \(error.localizedDescription)")
+                }
+            }
+            self.messageTableView.reloadData()
+            self.manageTable()
+        }
+        let dismissAction = UIAlertAction(title: "Dismiss", style: .cancel) { (_) in }
+        
         let currentUser = messagesData[indexPath.row].userName
         if currentUser == userName{
-            isUserEditingMessage = true
-            selectedMessageTimetoken = messagesData[indexPath.row].timeToken
-            print("selectedMessageTimetoken:-",selectedMessageTimetoken!)
-            messageTxt.becomeFirstResponder()
+            alert.addAction(editAction)
+            alert.addAction(deleteAction)
+        } else{
+            alert.addAction(deleteAction)
         }
+        alert.addAction(dismissAction)
+        present(alert, animated: true, completion: nil)
     }
 }
 
