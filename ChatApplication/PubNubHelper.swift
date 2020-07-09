@@ -99,14 +99,4 @@ class PubNubHelper {
             }
         }
     }
-    
-    func pubNubDateFormatter(date: Date) -> String{
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.timeStyle = .short
-        dateFormatter.timeZone = .current
-        let formattedDate = dateFormatter.string(from: date)
-        
-        return formattedDate
-    }
 }
