@@ -30,8 +30,9 @@ class MessagesVC: UIViewController {
     
     var messagesData = [Message]()
     var isUserEditingMessage: Bool = false
+    var ispresent:Bool = false
     var selectedMessageTimetoken: Timetoken?
-    var readRecepitColor = UIColor.gray
+    var readReceiptColor: [String] = []
     
     var updateChannel: String = ""
     
@@ -43,14 +44,27 @@ class MessagesVC: UIViewController {
         messageTableView.dataSource = self
         messageTxt.delegate = self
         
-        navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
+        navigationItem.leftBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "icons8-back-50-2"), style: .plain, target: self, action: #selector(MessagesVC.backBtnTapped))
         setNavBar()
+        ispresent = true
         
         print("messages on channel",loadedMessages)
         
         updateChannel = channelName + "Update"
         
         client.subscribe(to: [updateChannel],withPresence: true)
+        
+        let timeTokenString:String = String(describing: (Timetoken(Date().toNanos())))
+        
+        self.client.publish(channel: self.updateChannel, message: ["type":"receipt","timetoken": timeTokenString,"text":"message_Read","userName":self.userName]) { (result) in
+            switch result {
+            case let .success(response):
+                print("Successful Publish Read Receipt: \(response)")
+            case let .failure(error):
+                print("Failed Publish Read Receipt: \(error.localizedDescription)")
+            }
+        }
+        
         
         for m in loadedMessages{
             let date = m.timetoken.timetokenDate
@@ -63,19 +77,14 @@ class MessagesVC: UIViewController {
             
             // print("Data",message,messageTimeToken,messageTime,userName)
             
-            let md = Message(data: ["Message":message,"MessageTime":messageTime,"UserName":userName,"MessageTimeToken":messageTimeToken])
+            let md = Message(data: ["Message":message,"MessageTime":messageTime,"UserName":userName,"MessageTimeToken":messageTimeToken,"recepitColor":"gray"])
             
             messagesData.append(md)
         }
         
-         historyFetcher()
-        
-        //        client.fetchMessageActions(channel: channelName) { (result) in
-        //            print("Message Action",result)
-        //        }
+        historyFetcher()
         
         manageTable()
-        manageMessageActions()
         
         listener!.didReceiveSubscription = { event in
             switch event {
@@ -101,11 +110,6 @@ class MessagesVC: UIViewController {
             print("didReceiveMessage",message)
             if message.channel == self.updateChannel{
                 if message.payload["type"] == "update"{
-                    print(message.payload["type"]!)
-                    print(message.payload["timetoken"]!)
-                    print(message.payload["text"]!)
-                    print(message.payload["userName"]!)
-                    
                     let updatedMessageTimeToken = Timetoken((message.payload["timetoken"]?.stringOptional!)!)
                     if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
                         self.messagesData[index].message = message.payload["text"]?.stringOptional!
@@ -114,7 +118,52 @@ class MessagesVC: UIViewController {
                     self.messageTableView.reloadData()
                     self.manageTable()
                     
-                }
+                } else if message.payload["type"] == "receipt" && message.payload["text"] == "message_sent"{
+                    let timeTokenString:String = String(describing: (message.payload["timetoken"]?.stringOptional!)!)
+                    self.client.publish(channel: self.updateChannel, message: ["type":"receipt","timetoken": timeTokenString,"text":"message_Recevied","userName":self.userName]) { (result) in
+                        switch result {
+                        case let .success(response):
+                            print("Successful Publish Recevied Receipt: \(response)")
+                        case let .failure(error):
+                            print("Failed Publish Recevied Receipt: \(error.localizedDescription)")
+                        }
+                    }
+                } else if message.payload["type"] == "receipt" && message.payload["text"] == "message_Recevied"{
+                    if message.publisher?.stringOptional! != self.userName{
+                        let timeTokenString:String = String(describing: (message.payload["timetoken"]?.stringOptional!)!)
+                        if let index = self.messagesData.firstIndex(where: { $0.timeToken == Timetoken(timeTokenString)}) {
+                            self.messagesData[index].receiptColor = "message_Recevied"
+                        }
+                        if self.ispresent{
+                            let timeTokenString:String = String(describing: (message.payload["timetoken"]?.stringOptional!)!)
+                            self.client.publish(channel: self.updateChannel, message: ["type":"receipt","timetoken": timeTokenString,"text":"message_Readed","userName":self.userName]) { (result) in
+                                switch result {
+                                case let .success(response):
+                                    print("Successful Publish Readed Receipt: \(response)")
+                                case let .failure(error):
+                                    print("Failed Publish Readed Receipt: \(error.localizedDescription)")
+                                }
+                            }
+                        }
+                    } 
+                } else if message.payload["type"] == "receipt" && message.payload["text"] == "message_Readed"{
+                    if message.publisher?.stringOptional! != self.userName{
+                        let timeTokenString:String = String(describing: (message.payload["timetoken"]?.stringOptional!)!)
+                        if let index = self.messagesData.firstIndex(where: { $0.timeToken == Timetoken(timeTokenString)}) {
+                            self.messagesData[index].receiptColor = "message_Readed"
+                        }
+                    }
+                }else if message.payload["type"] == "receipt" && message.payload["text"] == "message_Read"{
+                    print("reading message")
+                    if message.publisher?.stringOptional! != self.userName{
+                        let timeTokenString:String = String(describing: (message.payload["timetoken"]?.stringOptional!)!)
+                        for m in self.messagesData{
+                            if m.timeToken!.timetokenDate < Timetoken(timeTokenString)!.timetokenDate{
+                                m.receiptColor = "message_Read"
+                            }
+                        }
+                    }
+                } 
             }else{
                 if let messagesFromUser = message.payload.stringOptional{
                     let messageTime = message.timetoken.timetokenDate
@@ -122,18 +171,6 @@ class MessagesVC: UIViewController {
                     if message.userMetadata!.stringOptional! != self.userName{
                         let md = Message(data: ["Message":messagesFromUser,"MessageTime":localDate,"UserName":message.userMetadata!.stringOptional!,"MessageTimeToken":message.timetoken])
                         self.messagesData.append(md)
-                    }
-                }
-            }
-            
-            if message.publisher?.stringOptional! != self.userName{
-                let action = MyAppMessageAction(type: "receipt", value: "message_Recevied")
-                self.client.addMessageAction(channel: self.channelName, message: action, messageTimetoken: message.timetoken) { result in
-                    switch result{
-                    case let .success(response):
-                        print("message Recevied: \(response)")
-                    case let .failure(error):
-                        print("Error from failed response: \(error.localizedDescription)")
                     }
                 }
             }
@@ -172,13 +209,19 @@ class MessagesVC: UIViewController {
         print("Menu button pressed")
     }
     
+    @objc func backBtnTapped(){
+        print("Back button pressed")
+        ispresent = false
+        navigationController?.popViewController(animated: true)
+    }
+    
     func historyFetcher(){
         
         // MARK: ChannelUpdate History
         client.fetchMessageHistory(for: [updateChannel],max: 25) { (result) in
             switch result{
             case let .success(response):
-                print("#######",response)
+                print("updatedMessageHistory",response)
                 if let channelUpdates = response[self.updateChannel]?.messages{
                     self.updatedMessages.append(contentsOf: channelUpdates)
                     for m in self.updatedMessages{
@@ -195,10 +238,27 @@ class MessagesVC: UIViewController {
                                     self.messagesData.remove(at: index)
                                 }
                             }
+                        }  else if m.message["type"]?.stringOptional! == "receipt" && m.message["text"]?.stringOptional == "message_sent"{
+                            if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
+                                self.messagesData[index].receiptColor = m.message["text"]?.stringOptional!
+                            }
+                        } else if m.message["type"]?.stringOptional! == "receipt" && m.message["text"]?.stringOptional == "message_Recevied"{
+                            if let index = self.messagesData.firstIndex(where: { $0.timeToken == updatedMessageTimeToken}) {
+                                self.messagesData[index].receiptColor = m.message["text"]?.stringOptional!
+                            }
+                        }  else if m.message["type"]?.stringOptional! == "receipt" && m.message["text"]?.stringOptional == "message_Read"{
+                            let timeTokenString:String = String(describing: (m.message["timetoken"]?.stringOptional!)!)
+                            for ma in self.messagesData{
+                                if ma.timeToken!.timetokenDate < Timetoken(timeTokenString)!.timetokenDate{
+                                    ma.receiptColor = "message_Read"
+                                }
+                            }
                         }
+                        
                     }
                 }
                 self.messageTableView.reloadData()
+                self.manageTable()
             case let .failure(Error):
                 print(Error.localizedDescription)
             }
@@ -259,11 +319,30 @@ class MessagesVC: UIViewController {
                 //                self.client.addMessageAction(channel: self.channelName, message: action, messageTimetoken: response.timetoken) { result in
                 //                    switch result{
                 //                    case let .success(response):
-                //                        print("message sent: \(response)")
+                //                        print("###########message sent: \(response)")
+                //
                 //                    case let .failure(error):
                 //                        print("Error from failed response: \(error.localizedDescription)")
                 //                    }
                 //                }
+                
+                let timeTokenString:String = String(describing: response.timetoken)
+                print("@@@@@",timeTokenString)
+                self.client.publish(channel: self.updateChannel, message: ["type":"receipt","timetoken": timeTokenString,"text":"message_sent","userName":self.userName]) { (result) in
+                    switch result {
+                    case let .success(rresponse):
+                        print("Successful Publish Receipt: \(rresponse)")
+                        if let index = self.messagesData.firstIndex(where: { $0.timeToken == response.timetoken}) {
+                            self.messagesData[index].receiptColor = "message_sent"
+                        }
+                        self.messageTableView.reloadData()
+                        self.manageTable()
+                    case let .failure(error):
+                        print("Failed Publish Receipt: \(error.localizedDescription)")
+                    }
+                }
+                
+                
                 self.messageTableView.reloadData()
                 self.manageTable()
             case let .failure(error):
@@ -271,19 +350,6 @@ class MessagesVC: UIViewController {
             }
         }
         messageTxt.text = ""
-    }
-    
-    func manageMessageActions(){
-        
-        listener!.didReceiveMessageAction = { event in
-            print("didReceiveMessageAction",event)
-            if (event.associatedValue.type.stringOptional! == "receipt" && event.associatedValue.value.stringOptional! == "message_Recevied"){
-                if event.associatedValue.uuid != self.userName{
-                    self.readRecepitColor = UIColor.red
-                    self.messageTableView.reloadData()
-                }
-            }
-        }
     }
     
     @IBAction func sendMessageBtn(_ sender: UIButton) {
@@ -341,10 +407,10 @@ extension MessagesVC: UITableViewDelegate,UITableViewDataSource{
         let cell = tableView.dequeueReusableCell(withIdentifier: "MessagesCell", for: indexPath) as! MessagesTableViewCell
         let currentUser = messagesData[indexPath.row].userName
         if currentUser == userName{
-            cell.setMessage(data: messagesData[indexPath.row], readRC: readRecepitColor, readRI: "checkmark", ChatBBC: UIColor.green)
+            cell.setMessage(data: messagesData[indexPath.row], readRI: "checkmark", ChatBBC: UIColor.green)
         }
         else{
-            cell.setMessage(data: messagesData[indexPath.row], readRC: readRecepitColor, readRI: "", ChatBBC: UIColor.white)
+            cell.setMessage(data: messagesData[indexPath.row], readRI: "", ChatBBC: UIColor.white)
         }
         return cell
     }

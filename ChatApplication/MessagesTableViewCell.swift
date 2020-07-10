@@ -25,12 +25,23 @@ class MessagesTableViewCell: UITableViewCell {
         bubbleBackgroundView.layer.cornerRadius = 8
     }
     
-    func setMessage(data: Message,readRC: UIColor,readRI:String,ChatBBC: UIColor){
+    func setMessage(data: Message,readRI:String,ChatBBC: UIColor){
         bubbleBackgroundView.backgroundColor = ChatBBC
         readReceipt.image = UIImage(systemName: readRI)
         message.text = data.message
         timeLbl.text = data.messageTime
-        readReceipt.tintColor = readRC
+        
+        if data.receiptColor == "message_Recevied"{
+            readReceipt.tintColor = UIColor.red
+        }else if data.receiptColor == "message_Read"{
+            readReceipt.tintColor = UIColor.blue
+        }else if data.receiptColor == "message_Readed"{
+            readReceipt.tintColor = UIColor.blue
+        }else if data.receiptColor == "message_sent"{
+            readReceipt.tintColor = UIColor.gray
+        } else if data.receiptColor == "gray"{
+            readReceipt.tintColor = UIColor.gray
+        }
         
         if ChatBBC == UIColor.green{
             leadingConstraint.constant = 97

@@ -45,9 +45,9 @@ class ViewController: UIViewController {
         client = PubNub(configuration: config)
         
         if userName == "Sid"{
-            fixedChannels = ["new15"]
+            fixedChannels = ["new18"]
         } else if userName == "Siddhesh"{
-            fixedChannels = ["new15"]
+            fixedChannels = ["new18"]
         }
         
         // pubnubHelper.fetchUsers(userName: userName!)
@@ -75,7 +75,7 @@ class ViewController: UIViewController {
         let newUser = UserObject(name: newUserName!, id: UUID().uuidString, externalId: "externalId", profileURL: "profileURL", email: "email", custom: ["custom": "custom"], created: Date(), updated:Date(), eTag: "eTag")
         print("userobject:-",newUser)
         
-       // pubnubHelper.createUser(userName: newUser)
+        // pubnubHelper.createUser(userName: newUser)
         newUserTxt.text = ""
         
     }
