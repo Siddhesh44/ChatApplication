@@ -21,30 +21,30 @@ class PubNubHelper {
     var messageDic: [String: [MessageHistoryMessagesPayload]]?
     var messageDetails: [MessageHistoryMessagesPayload] = []
     
-    /*
-     func createUser(userName: PubNubUser) {
-     client.create(user: userName) { (result) in
-     switch result{
-     case .success(let response):
-     self.pubnubDelegate?.didGetResults(result: "Response after creating user:-\(response)")
-     case .failure(let error):
-     self.pubnubDelegate?.didGetResults(result: "Error occurred while creating user:-\(error.localizedDescription)")
-     }
-     }
-     }
-     
-     func fetchUsers(userName: String){
-     client.fetch(userID: userName) { (result) in
-     switch result{
-     case let .success(response):
-     self.pubnubDelegate?.didGetResults(result: "Response after fetching user:-\(response)")
-     self.channelList(userName: "User")
-     case let .failure(error):
-     self.pubnubDelegate?.didGetResults(result: "Error occurred while fetching user:-\(error.localizedDescription)")
-     }
-     }
-     }
-     */
+    
+    func createUser(userName: PubNubUser,client: PubNub) {
+        client.create(user: userName) { (result) in
+            switch result{
+            case .success(let response):
+                self.pubnubDelegate?.didGetResults(result: "Response after creating user:-\(response)")
+            case .failure(let error):
+                self.pubnubDelegate?.didGetResults(result: "Error occurred while creating user:-\(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func fetchUsers(userName: String,client: PubNub){
+        client.fetch(userID: userName) { (result) in
+            switch result{
+            case let .success(response):
+                self.pubnubDelegate?.didGetResults(result: "Response after fetching user:-\(response)")
+                self.channelList(userName: "User", client: client)
+            case let .failure(error):
+                self.pubnubDelegate?.didGetResults(result: "Error occurred while fetching user:-\(error.localizedDescription)")
+            }
+        }
+    }
+    
     
     func addChannels(client: PubNub!){
         client.add(channels: ["Group1", "Friend1"],to: "Sid") { result in

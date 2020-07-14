@@ -29,6 +29,7 @@ class ViewController: UIViewController {
         
         pubnubHelper.pubnubDelegate = self
         
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -68,16 +69,14 @@ class ViewController: UIViewController {
     @IBAction func createNewUser(_ sender: UIButton) {
         newUserName = newUserTxt.text!
         print("UserName:-",newUserName!)
-        //        var config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
-        //        config.uuid = newUserName!
-        //        client = PubNub(configuration: config)
+                var config = PubNubConfiguration(publishKey: "pub-c-f656341c-e88a-449f-9b36-aeadbbe7c364", subscribeKey: "sub-c-c2bd004c-b07d-11ea-a40b-6ab2c237bf6e")
+                client = PubNub(configuration: config)
         
         let newUser = UserObject(name: newUserName!, id: UUID().uuidString, externalId: "externalId", profileURL: "profileURL", email: "email", custom: ["custom": "custom"], created: Date(), updated:Date(), eTag: "eTag")
         print("userobject:-",newUser)
         
-        // pubnubHelper.createUser(userName: newUser)
+        pubnubHelper.createUser(userName: newUser,client: client)
         newUserTxt.text = ""
-        
     }
 }
 
