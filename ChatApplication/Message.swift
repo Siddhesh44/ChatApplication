@@ -25,3 +25,6 @@ class Message{
         receiptColor = data["ReceiptColor"] as? String
     }
 }
+
+
+
